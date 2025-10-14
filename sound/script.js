@@ -630,7 +630,7 @@ function stopAllSounds() {
 }
 
 // Volume controls
-function setPadVolume(filename, value) {
+function setPadVolume(filename, value, fromSync = false) {
   if (!filename) return;
 
   const numValue = parseInt(value, 10);
@@ -650,6 +650,11 @@ function setPadVolume(filename, value) {
     if (volVal) volVal.textContent = numValue.toString();
     const volInput = pad.querySelector('.vol');
     if (volInput) volInput.value = numValue.toString();
+  }
+
+  // Broadcast volume if sync enabled and not from sync
+  if (!fromSync && window.syncManager && window.syncManager.isEnabled) {
+    window.syncManager.broadcastVolume(filename, numValue);
   }
 }
 
@@ -701,20 +706,33 @@ function handleSearch(e) {
 
 function toggleTagFilter(tag) {
   if (!tag) return;
-  
+
+  // Blocca se giocatore in sync
+  if (window.syncManager && window.syncManager.isEnabled && !window.syncManager.canControlPlayback) {
+    if (window.showNotification) {
+      window.showNotification('Solo i Master possono cambiare i filtri', 'error');
+    }
+    return;
+  }
+
   if (activeTags.has(tag)) {
     activeTags.delete(tag);
   } else {
     activeTags.add(tag);
   }
-  
+
   // Update button state
   const btn = document.querySelector(`[data-tag="${tag}"]`);
   if (btn) {
     btn.setAttribute('aria-pressed', activeTags.has(tag));
   }
-  
+
   applyFilters();
+
+  // Broadcast filters if sync enabled
+  if (window.syncManager && window.syncManager.isEnabled && window.syncManager.canControlPlayback) {
+    window.syncManager.broadcastFilters(activeTags);
+  }
 }
 
 function clearFilters() {
@@ -1125,6 +1143,9 @@ function showNotification(message, type = 'info') {
 window.showNotification = showNotification;
 window.padVolumes = padVolumes;
 window.sounds = sounds;
+window.activeTags = activeTags;
+window.applyFilters = applyFilters;
+window.setPadVolume = setPadVolume;
 window.calculateEffectiveVolume = calculateEffectiveVolume;
 
 

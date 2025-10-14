@@ -292,6 +292,16 @@ class SyncManager {
       this.syncPlayback(data.playback);
     }
 
+    // Sync filters
+    if (data.filters && data.filters.userId !== this.userId) {
+      this.syncFilters(data.filters);
+    }
+
+    // Sync volumes
+    if (data.volumes && data.volumes.userId !== this.userId) {
+      this.syncVolumes(data.volumes);
+    }
+
     this.lastSyncTime = Date.now();
     this.updateSyncIndicator('synced');
 
@@ -306,6 +316,48 @@ class SyncManager {
 
     const roomStatusEl = document.getElementById('roomStatus');
     if (roomStatusEl) roomStatusEl.textContent = 'Connesso';
+  }
+
+  async syncFilters(filtersData) {
+    if (!filtersData) return;
+
+    const { activeTags, timestamp } = filtersData;
+    const latency = Date.now() - timestamp;
+    if (latency > 5000) return;
+
+    console.log('[Sync] Received filters:', activeTags);
+
+    // Update activeTags
+    if (window.activeTags) {
+      window.activeTags.clear();
+      (activeTags || []).forEach(tag => window.activeTags.add(tag));
+
+      // Update filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        const tag = btn.getAttribute('data-tag');
+        btn.setAttribute('aria-pressed', window.activeTags.has(tag) ? 'true' : 'false');
+      });
+
+      // Apply filters
+      if (window.applyFilters) {
+        window.applyFilters();
+      }
+    }
+  }
+
+  async syncVolumes(volumesData) {
+    if (!volumesData) return;
+
+    const { filename, volume, timestamp } = volumesData;
+    const latency = Date.now() - timestamp;
+    if (latency > 5000) return;
+
+    console.log('[Sync] Received volume update:', filename, volume);
+
+    // Update volume with fromSync flag to prevent broadcast loop
+    if (window.setPadVolume) {
+      window.setPadVolume(filename, volume, true);
+    }
   }
 
   async syncPlayback(playbackData) {
@@ -360,6 +412,39 @@ class SyncManager {
       console.log('[Sync] Broadcast:', action, filename);
     } catch (error) {
       console.error('[Sync] Broadcast error:', error);
+    }
+  }
+
+  async broadcastFilters(activeTags) {
+    if (!this.isEnabled || !this.roomRef || !this.canControlPlayback) return;
+
+    try {
+      await this.roomRef.child('filters').set({
+        activeTags: Array.from(activeTags),
+        userId: this.userId,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
+
+      console.log('[Sync] Broadcast filters:', activeTags);
+    } catch (error) {
+      console.error('[Sync] Broadcast filters error:', error);
+    }
+  }
+
+  async broadcastVolume(filename, volume) {
+    if (!this.isEnabled || !this.roomRef) return;
+
+    try {
+      await this.roomRef.child('volumes').set({
+        filename,
+        volume,
+        userId: this.userId,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
+
+      console.log('[Sync] Broadcast volume:', filename, volume);
+    } catch (error) {
+      console.error('[Sync] Broadcast volume error:', error);
     }
   }
 
@@ -580,13 +665,29 @@ class SyncManager {
   updatePlaybackControls() {
     const pads = document.querySelectorAll('.pad');
     pads.forEach(pad => {
+      const padBody = pad.querySelector('.pad-body');
+      const volControls = pad.querySelector('.pad-controls');
+
       if (this.isEnabled && !this.canControlPlayback) {
-        pad.style.pointerEvents = 'none';
-        pad.style.opacity = '0.6';
-        pad.title = 'Solo i Master possono controllare la riproduzione';
+        // Giocatori: disabilita click sul pad ma lascia volume
+        if (padBody) {
+          padBody.style.pointerEvents = 'none';
+          padBody.style.opacity = '0.6';
+        }
+        if (volControls) {
+          volControls.style.pointerEvents = 'auto';
+          volControls.style.opacity = '1';
+        }
+        pad.title = 'Solo i Master possono avviare la musica';
       } else {
-        pad.style.pointerEvents = '';
-        pad.style.opacity = '';
+        if (padBody) {
+          padBody.style.pointerEvents = '';
+          padBody.style.opacity = '';
+        }
+        if (volControls) {
+          volControls.style.pointerEvents = '';
+          volControls.style.opacity = '';
+        }
         pad.title = '';
       }
     });
@@ -603,6 +704,21 @@ class SyncManager {
         stopBtn.title = 'Ferma tutti i suoni';
       }
     }
+
+    // Disabilita filtri per i giocatori
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
+      if (this.isEnabled && !this.canControlPlayback) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.title = 'Solo i Master possono cambiare i filtri';
+      } else {
+        btn.disabled = false;
+        btn.style.opacity = '';
+        const tag = btn.getAttribute('data-tag');
+        btn.title = tag;
+      }
+    });
   }
 }
 

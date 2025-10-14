@@ -111,8 +111,16 @@ try{
     reply(['success'=>false,'error'=>'MIME_FAIL_'.$mime], 415);
   }
 
-  // Generate unique filename
-  $safeName = slugify($label) . '-' . random_id(8) . '.' . $ext;
+  // Generate filename from original filename
+  $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
+  $safeName = slugify($originalName) . '.' . $ext;
+
+  // If file exists, add counter instead of random string
+  $counter = 1;
+  while (file_exists($destDir . '/' . $safeName)) {
+    $safeName = slugify($originalName) . '-' . $counter . '.' . $ext;
+    $counter++;
+  }
   $destDir = __DIR__ . '/sounds';
   
   if (!is_dir($destDir)) {
