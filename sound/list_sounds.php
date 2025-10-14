@@ -70,11 +70,12 @@ try{
     // Ensure file is readable
     if (!is_readable($path)) continue;
     
-    $meta = isset($map[$file]) ? $map[$file] : array('label'=>pathinfo($file, PATHINFO_FILENAME), 'tags'=>array());
+    $meta = isset($map[$file]) ? $map[$file] : array('label'=>pathinfo($file, PATHINFO_FILENAME), 'tags'=>array(), 'type'=>'music');
     $label = isset($meta['label']) && $meta['label'] !== '' ? $meta['label'] : pathinfo($file, PATHINFO_FILENAME);
     $tags  = isset($meta['tags']) && is_array($meta['tags']) ? $meta['tags'] : array();
+    $type  = isset($meta['type']) && in_array($meta['type'], array('music', 'effect'), true) ? $meta['type'] : 'music';
 
-    $items[] = array('filename'=>$file, 'label'=>$label, 'tags'=>$tags, 'mtime'=>$mtime, 'size'=>$size);
+    $items[] = array('filename'=>$file, 'label'=>$label, 'tags'=>$tags, 'type'=>$type, 'mtime'=>$mtime, 'size'=>$size);
   }
   closedir($dh);
 

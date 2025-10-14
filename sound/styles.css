@@ -193,7 +193,8 @@ header.toolbar{
   z-index: 2;
 }
 
-.pad.effect-button:hover .effect-tools{
+.pad.effect-button:hover .effect-tools,
+.pad.effect-button:focus-within .effect-tools{
   opacity: 1;
 }
 
@@ -201,12 +202,20 @@ header.toolbar{
   width: 28px;
   height: 28px;
   font-size: 0.9rem;
-  background: rgba(0,0,0,.4);
+  background: rgba(0,0,0,.6);
   backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,.2);
 }
 
 .pad.effect-button .btn-icon:hover{
-  background: rgba(0,0,0,.6);
+  background: rgba(0,0,0,.8);
+  border-color: rgba(255,255,255,.4);
+}
+
+@media (max-width: 768px) {
+  .pad.effect-button .effect-tools{
+    opacity: 1;
+  }
 }
 .pad .pad-tools{
   display:flex; gap:6px; flex-wrap:wrap; align-items:center; justify-content:flex-start;
