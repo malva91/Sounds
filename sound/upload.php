@@ -78,6 +78,11 @@ try{
     reply(['success'=>false,'error'=>'LABEL_REQUIRED'], 400);
   }
 
+  $type = isset($_POST['type']) ? trim((string)$_POST['type']) : 'music';
+  if (!in_array($type, ['music', 'effect'], true)) {
+    $type = 'music';
+  }
+
   $tagsStr = isset($_POST['tags']) ? (string)$_POST['tags'] : '';
   $tags = array_values(array_filter(array_map(function($s){
     $s = trim($s);
@@ -170,7 +175,7 @@ try{
     if (is_array($decoded)) $map = $decoded;
   }
   
-  $map[$safeName] = ['label'=>$label, 'tags'=>$tags];
+  $map[$safeName] = ['label'=>$label, 'tags'=>$tags, 'type'=>$type];
   
   if (@file_put_contents($jsonPath, json_encode($map, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT), LOCK_EX) === false){
     // Clean up uploaded file if JSON update fails

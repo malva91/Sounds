@@ -133,6 +133,54 @@ header.toolbar{
 }
 .pad:focus{outline:2px solid var(--accent); outline-offset:2px}
 .pad[aria-pressed="true"]{box-shadow:0 0 0 2px rgba(217,164,65,.35), 0 0 32px rgba(217,164,65,.18)}
+
+/* Effect button - pulsante colorato semplice */
+.pad.effect-button{
+  min-width: 100px;
+  max-width: 180px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.1) inset;
+  transition: transform .15s, box-shadow .2s, filter .2s;
+  filter: saturate(0.85) brightness(0.95);
+}
+
+.pad.effect-button:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.2) inset;
+  filter: saturate(1) brightness(1.05);
+}
+
+.pad.effect-button:active{
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.1) inset;
+}
+
+.pad.effect-button[aria-pressed="true"]{
+  box-shadow: 0 0 0 3px rgba(255,255,255,.5), 0 0 24px currentColor;
+  filter: saturate(1.2) brightness(1.2);
+  animation: effect-pulse 0.5s ease-out;
+}
+
+@keyframes effect-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.effect-label{
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.3;
+  text-shadow: 0 1px 3px rgba(0,0,0,.4);
+  word-wrap: break-word;
+  max-width: 100%;
+}
 .pad .pad-tools{
   display:flex; gap:6px; flex-wrap:wrap; align-items:center; justify-content:flex-start;
 }

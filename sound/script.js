@@ -272,14 +272,21 @@ function createPadElement(sound) {
   const filename = sound.filename;
   const label = sound.label || filename;
   const tags = sound.tags || [];
+  const type = sound.type || 'music';
   const isFavorite = favorites.has(filename);
   const isLoop = loops.has(filename);
   const volume = padVolumes[filename] || 50;
   const tint = getTint(filename);
 
+  // Crea un elemento diverso in base al tipo
+  if (type === 'effect') {
+    return createEffectButton(sound, filename, label, tint);
+  }
+
   const pad = document.createElement('button');
   pad.className = 'pad';
   pad.setAttribute('data-filename', filename);
+  pad.setAttribute('data-type', 'music');
   pad.style.color = tint;
   pad.setAttribute('aria-pressed', 'false');
   pad.setAttribute('tabindex', '0');
@@ -398,6 +405,27 @@ function createPadElement(sound) {
   pad.appendChild(padTools);
   pad.appendChild(padProgress);
   pad.appendChild(seekBar);
+
+  return pad;
+}
+
+function createEffectButton(sound, filename, label, tint) {
+  const pad = document.createElement('button');
+  pad.className = 'pad effect-button';
+  pad.setAttribute('data-filename', filename);
+  pad.setAttribute('data-type', 'effect');
+  pad.style.backgroundColor = tint;
+  pad.style.color = 'white';
+  pad.setAttribute('aria-pressed', 'false');
+  pad.setAttribute('tabindex', '0');
+  pad.addEventListener('click', () => toggleSound(filename));
+
+  const effectLabel = document.createElement('div');
+  effectLabel.className = 'effect-label';
+  effectLabel.textContent = label;
+  effectLabel.title = label;
+
+  pad.appendChild(effectLabel);
 
   return pad;
 }
@@ -911,7 +939,8 @@ function openEditModal(filename) {
   form.filename.value = filename;
   form.label.value = sound.label || '';
   form.tags.value = (sound.tags || []).join(', ');
-  
+  form.type.value = sound.type || 'music';
+
   openModal(editModal);
 }
 
@@ -936,7 +965,8 @@ async function handleEdit(e) {
   const data = {
     filename: formData.get('filename'),
     label: formData.get('label'),
-    tags: formData.get('tags').split(',').map(s => s.trim()).filter(s => s)
+    tags: formData.get('tags').split(',').map(s => s.trim()).filter(s => s),
+    type: formData.get('type') || 'music'
   };
   
   try {

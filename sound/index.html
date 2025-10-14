@@ -49,6 +49,14 @@
         <input type="text" id="upload-label" name="label" required maxlength="80" placeholder="Nome del suono">
       </div>
       <div class="row">
+        <label for="upload-type">Tipologia *</label>
+        <select id="upload-type" name="type" required style="background:#1c1c20; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px 12px;">
+          <option value="music">Musica - pad completo con controlli</option>
+          <option value="effect">Effetto - pulsante colorato semplice</option>
+        </select>
+        <small class="help">Gli effetti sono pulsanti semplici per suoni brevi</small>
+      </div>
+      <div class="row">
         <label for="upload-tags">Tag (separati da virgola)</label>
         <input type="text" id="upload-tags" name="tags" placeholder="musica, effetti, ambiente">
         <small class="help">Max 20 tag, 30 caratteri ciascuno</small>
@@ -73,6 +81,13 @@
       <div class="row">
         <label for="edit-label">Etichetta *</label>
         <input type="text" id="edit-label" name="label" required maxlength="80">
+      </div>
+      <div class="row">
+        <label for="edit-type">Tipologia *</label>
+        <select id="edit-type" name="type" required style="background:#1c1c20; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px 12px;">
+          <option value="music">Musica - pad completo con controlli</option>
+          <option value="effect">Effetto - pulsante colorato semplice</option>
+        </select>
       </div>
       <div class="row">
         <label for="edit-tags">Tag (separati da virgola)</label>

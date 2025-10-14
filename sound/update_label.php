@@ -45,8 +45,13 @@ try{
   if ($label === '') reply(['success'=>false,'error'=>'LABEL_MISSING'], 400);
   $label = function_exists('mb_substr') ? mb_substr($label, 0, 80) : substr($label, 0, 80);
 
+  $type = isset($data['type']) ? trim((string)$data['type']) : 'music';
+  if (!in_array($type, ['music', 'effect'], true)) {
+    $type = 'music';
+  }
+
   $tags = isset($data['tags']) && is_array($data['tags']) ? $data['tags'] : [];
-  
+
   // Better tag processing
   $tags = array_values(array_filter(array_map(function($s){
     $s = strip_tags(trim((string)$s));
@@ -54,7 +59,7 @@ try{
     $s = function_exists('mb_substr') ? mb_substr($s, 0, 30) : substr($s, 0, 30);
     return $s === '' ? null : $s;
   }, $tags)));
-  
+
   if (count($tags) > 20) $tags = array_slice($tags, 0, 20);
 
   // Update sounds.json
@@ -71,7 +76,7 @@ try{
   // Store original data for rollback
   $originalData = isset($map[$filename]) ? $map[$filename] : null;
   
-  $map[$filename] = ['label'=>$label, 'tags'=>$tags];
+  $map[$filename] = ['label'=>$label, 'tags'=>$tags, 'type'=>$type];
   
   if (@file_put_contents($jsonPath, json_encode($map, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT), LOCK_EX) === false){
     reply(['success'=>false,'error'=>'JSON_WRITE_FAIL'], 500);
