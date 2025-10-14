@@ -27,17 +27,58 @@
 
   <main>
     <div id="errorBar" class="error-bar" hidden></div>
-    
-    <!-- Filters section -->
-    <div class="filters-section" style="padding: 8px clamp(8px,3vw,24px); display: none;" role="region" aria-label="Filtri per tag">
-      <div class="filters" id="filtersContainer">
-        <!-- Filter buttons will be populated by JavaScript -->
+
+    <!-- Tab Navigation -->
+    <nav class="tab-navigation">
+      <button class="tab-btn active" data-tab="effects" onclick="switchTab('effects')">
+        <span class="tab-icon">⚡</span>
+        <span class="tab-label">Effetti</span>
+      </button>
+      <button class="tab-btn" data-tab="music" onclick="switchTab('music')">
+        <span class="tab-icon">🎵</span>
+        <span class="tab-label">Musiche</span>
+      </button>
+    </nav>
+
+    <!-- Effects Section -->
+    <section id="effectsSection" class="content-section active">
+      <div class="section-header">
+        <h2 class="section-title">Effetti Sonori</h2>
+        <div class="section-actions">
+          <div class="search-wrap">
+            <input type="text" id="searchEffects" class="search-input" placeholder="Cerca effetti..." autocomplete="off">
+          </div>
+        </div>
       </div>
-    </div>
-    
-    <div class="grid-wrap">
-      <div class="grid" data-size="medium"></div>
-    </div>
+
+      <div class="filters-section" id="effectsFiltersSection" style="display: none;" role="region" aria-label="Filtri effetti">
+        <div class="filters" id="effectsFiltersContainer"></div>
+      </div>
+
+      <div class="grid-wrap">
+        <div class="grid effects-grid" id="effectsGrid" data-size="medium"></div>
+      </div>
+    </section>
+
+    <!-- Music Section -->
+    <section id="musicSection" class="content-section">
+      <div class="section-header">
+        <h2 class="section-title">Musiche</h2>
+        <div class="section-actions">
+          <div class="search-wrap">
+            <input type="text" id="searchMusic" class="search-input" placeholder="Cerca musiche..." autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="filters-section" id="musicFiltersSection" style="display: none;" role="region" aria-label="Filtri musiche">
+        <div class="filters" id="musicFiltersContainer"></div>
+      </div>
+
+      <div class="grid-wrap">
+        <div class="grid music-grid" id="musicGrid" data-size="medium"></div>
+      </div>
+    </section>
   </main>
 
   <!-- Upload Modal -->
@@ -93,6 +134,14 @@
         <label for="edit-tags">Tag (separati da virgola)</label>
         <input type="text" id="edit-tags" name="tags" placeholder="musica, effetti, ambiente">
         <small class="help">Max 20 tag, 30 caratteri ciascuno</small>
+      </div>
+      <div class="row">
+        <label for="edit-color">Colore pulsante</label>
+        <div class="color-picker-wrap">
+          <input type="color" id="edit-color" name="color" class="color-input">
+          <input type="text" id="edit-color-hex" class="color-hex" placeholder="#ffffff" maxlength="7">
+        </div>
+        <small class="help">Colore personalizzato per il pulsante</small>
       </div>
       <menu>
         <button type="button" class="btn" onclick="closeModal(editModal)">Annulla</button>
@@ -156,6 +205,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="script.js"></script>
+  <script src="tabs.js"></script>
   <script src="offline-manager.js"></script>
   <script src="sync.js"></script>
 </body>

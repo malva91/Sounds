@@ -28,6 +28,7 @@ function safeParseJSON(key, defaultValue) {
 
 let padVolumes = safeParseJSON('padVolumes', {});
 let tintMap = safeParseJSON('tintMap', {});
+let customColors = safeParseJSON('customColors', {});
 let gridSize = localStorage.getItem('gridSize') || 'medium';
 
 // Debug mode
@@ -45,6 +46,8 @@ const tagVolumesPanel = document.getElementById('tagVolumesPanel');
 const errorBar = document.getElementById('errorBar');
 const filtersSection = document.querySelector('.filters-section');
 const filtersContainer = document.getElementById('filtersContainer');
+
+let colorInputTimeout = null;
 
 // Inizializzazione
 document.addEventListener('DOMContentLoaded', init);
@@ -82,15 +85,18 @@ async function init() {
 }
 
 function setupEventListeners() {
-  searchInput.addEventListener('input', handleSearch);
-  
+  if (searchInput) {
+    searchInput.addEventListener('input', handleSearch);
+  }
+
   // Form submissions
   document.getElementById('uploadForm').addEventListener('submit', handleUpload);
   document.getElementById('editForm').addEventListener('submit', handleEdit);
-  
+
   // Modal management
   document.addEventListener('keydown', handleGlobalKeydown);
-  
+
+  setupColorPicker();
 }
 
 function setupGridSize() {
@@ -178,8 +184,12 @@ async function loadSounds() {
     // Aggiorna riferimento globale
     window.sounds = sounds;
 
-    applyFilters();
-    updateFilters();
+    if (window.applyTabFilters) {
+      window.applyTabFilters();
+    } else {
+      applyFilters();
+      updateFilters();
+    }
 
   } catch (error) {
     console.error('Error loading sounds:', error);
@@ -410,11 +420,14 @@ function createPadElement(sound) {
 }
 
 function createEffectButton(sound, filename, label, tint) {
+  const customColor = customColors[filename];
+  const finalColor = customColor || tint;
+
   const pad = document.createElement('button');
   pad.className = 'pad effect-button';
   pad.setAttribute('data-filename', filename);
   pad.setAttribute('data-type', 'effect');
-  pad.style.backgroundColor = tint;
+  pad.style.backgroundColor = finalColor;
   pad.style.color = 'white';
   pad.setAttribute('aria-pressed', 'false');
   pad.setAttribute('tabindex', '0');
@@ -957,44 +970,65 @@ async function handleUpload(e) {
 // Edit functionality
 function openEditModal(filename) {
   if (!filename) return;
-  
+
   if (window.offlineManager && window.offlineManager.isOffline) {
     showError('Modifica non disponibile in modalità offline');
     return;
   }
-  
+
   const sound = sounds.find(s => s.filename === filename);
   if (!sound) return;
-  
+
   const form = document.getElementById('editForm');
   form.filename.value = filename;
   form.label.value = sound.label || '';
   form.tags.value = (sound.tags || []).join(', ');
   form.type.value = sound.type || 'music';
 
+  const customColor = customColors[filename];
+  const colorInput = document.getElementById('edit-color');
+  const colorHex = document.getElementById('edit-color-hex');
+
+  if (customColor) {
+    colorInput.value = customColor;
+    colorHex.value = customColor;
+  } else {
+    const defaultColor = getTint(filename);
+    colorInput.value = defaultColor;
+    colorHex.value = defaultColor;
+  }
+
   openModal(editModal);
 }
 
 async function handleEdit(e) {
   e.preventDefault();
-  
+
   if (window.offlineManager && window.offlineManager.isOffline) {
     showError('Modifica non disponibile in modalità offline');
     return;
   }
-  
+
   const labelInput = e.target.querySelector('input[name="label"]');
   if (!labelInput.value.trim()) {
     showError('Inserisci un\'etichetta per il suono');
     labelInput.focus();
     return;
   }
-  
+
   const formData = new FormData(e.target);
   const submitBtn = e.target.querySelector('button[type="submit"]');
-  
+
+  const filename = formData.get('filename');
+  const colorValue = formData.get('color');
+
+  if (colorValue) {
+    customColors[filename] = colorValue;
+    localStorage.setItem('customColors', JSON.stringify(customColors));
+  }
+
   const data = {
-    filename: formData.get('filename'),
+    filename: filename,
     label: formData.get('label'),
     tags: formData.get('tags').split(',').map(s => s.trim()).filter(s => s),
     type: formData.get('type') || 'music'
@@ -1200,6 +1234,27 @@ function showNotification(message, type = 'info') {
   }, 4000);
 }
 
+function setupColorPicker() {
+  const colorInput = document.getElementById('edit-color');
+  const colorHex = document.getElementById('edit-color-hex');
+
+  if (colorInput && colorHex) {
+    colorInput.addEventListener('input', (e) => {
+      colorHex.value = e.target.value;
+    });
+
+    colorHex.addEventListener('input', (e) => {
+      clearTimeout(colorInputTimeout);
+      colorInputTimeout = setTimeout(() => {
+        const value = e.target.value;
+        if (/^#[0-9A-F]{6}$/i.test(value)) {
+          colorInput.value = value;
+        }
+      }, 300);
+    });
+  }
+}
+
 // Esponi funzioni globalmente per integrazione con sync.js
 window.showNotification = showNotification;
 window.padVolumes = padVolumes;
@@ -1208,6 +1263,8 @@ window.activeTags = activeTags;
 window.applyFilters = applyFilters;
 window.setPadVolume = setPadVolume;
 window.calculateEffectiveVolume = calculateEffectiveVolume;
+window.createPadElement = createPadElement;
+window.customColors = customColors;
 
 
 // Keyboard shortcuts
