@@ -427,6 +427,37 @@ function createEffectButton(sound, filename, label, tint) {
 
   pad.appendChild(effectLabel);
 
+  // Aggiungi tools per modifica e eliminazione
+  const padTools = document.createElement('div');
+  padTools.className = 'pad-tools effect-tools';
+
+  const createIcon = (emoji, title, pressed, handler) => {
+    const icon = document.createElement('span');
+    icon.className = `btn-icon icon ${title.toLowerCase()}`;
+    icon.role = 'button';
+    icon.tabIndex = 0;
+    icon.setAttribute('aria-pressed', pressed.toString());
+    icon.title = title;
+    icon.textContent = emoji;
+    icon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handler();
+    });
+    icon.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        handler();
+      }
+    });
+    return icon;
+  };
+
+  padTools.appendChild(createIcon('✏️', 'Modifica', false, () => openEditModal(filename)));
+  padTools.appendChild(createIcon('🗑️', 'Elimina', false, () => confirmDelete(filename)));
+
+  pad.appendChild(padTools);
+
   return pad;
 }
 

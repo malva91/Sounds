@@ -181,6 +181,33 @@ header.toolbar{
   word-wrap: break-word;
   max-width: 100%;
 }
+
+.pad.effect-button .effect-tools{
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity .2s;
+  z-index: 2;
+}
+
+.pad.effect-button:hover .effect-tools{
+  opacity: 1;
+}
+
+.pad.effect-button .btn-icon{
+  width: 28px;
+  height: 28px;
+  font-size: 0.9rem;
+  background: rgba(0,0,0,.4);
+  backdrop-filter: blur(4px);
+}
+
+.pad.effect-button .btn-icon:hover{
+  background: rgba(0,0,0,.6);
+}
 .pad .pad-tools{
   display:flex; gap:6px; flex-wrap:wrap; align-items:center; justify-content:flex-start;
 }
