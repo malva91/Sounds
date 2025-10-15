@@ -84,7 +84,7 @@ class SyncManager {
     const roomNameDisplay = document.createElement('div');
     roomNameDisplay.id = 'roomNameDisplay';
     roomNameDisplay.className = 'room-name-display';
-    roomNameDisplay.style.cssText = 'padding: 4px 12px; border-radius: 6px; background: rgba(255,255,255,0.05); font-size: 0.9em; color: var(--muted); display: none;';
+    roomNameDisplay.style.cssText = 'padding: 4px 12px; border-radius: 6px; background: rgba(255,255,255,0.05); font-size: 0.9em; color: var(--muted); display: block;';
     roomNameDisplay.textContent = this.roomName || 'Nessuna stanza';
 
     const syncBtn = document.createElement('button');
@@ -294,10 +294,7 @@ class SyncManager {
       this.syncFilters(data.filters);
     }
 
-    // Sync volumes
-    if (data.volumes && data.volumes.userId !== this.userId) {
-      this.syncVolumes(data.volumes);
-    }
+    // Volume sync removed - each user manages their own volume
 
     this.lastSyncTime = Date.now();
     this.updateSyncIndicator('synced');
@@ -342,20 +339,7 @@ class SyncManager {
     }
   }
 
-  async syncVolumes(volumesData) {
-    if (!volumesData) return;
-
-    const { filename, volume, timestamp } = volumesData;
-    const latency = Date.now() - timestamp;
-    if (latency > 5000) return;
-
-    console.log('[Sync] Received volume update:', filename, volume);
-
-    // Update volume with fromSync flag to prevent broadcast loop
-    if (window.setPadVolume) {
-      window.setPadVolume(filename, volume, true);
-    }
-  }
+  // Volume sync removed - each user manages their own volume locally
 
   async syncPlayback(playbackData) {
     if (!playbackData || !window.sounds) return;
@@ -428,22 +412,7 @@ class SyncManager {
     }
   }
 
-  async broadcastVolume(filename, volume) {
-    if (!this.isEnabled || !this.roomRef) return;
-
-    try {
-      await this.roomRef.child('volumes').set({
-        filename,
-        volume,
-        userId: this.userId,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-      });
-
-      console.log('[Sync] Broadcast volume:', filename, volume);
-    } catch (error) {
-      console.error('[Sync] Broadcast volume error:', error);
-    }
-  }
+  // Volume broadcast removed - each user manages their own volume locally
 
   startSyncCheck() {
     if (this.syncCheckInterval) {
@@ -691,8 +660,8 @@ class SyncManager {
         display.textContent = `📍 Stanza ${this.roomId.substring(5, 10)}`;
         display.style.display = 'block';
       } else {
-        display.textContent = 'Nessuna stanza';
-        display.style.display = 'none';
+        display.textContent = '📍 Nessuna stanza';
+        display.style.display = 'block';
       }
     }
   }

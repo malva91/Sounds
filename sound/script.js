@@ -724,10 +724,7 @@ function setPadVolume(filename, value, fromSync = false) {
     if (volInput) volInput.value = numValue.toString();
   }
 
-  // Broadcast volume if sync enabled and not from sync
-  if (!fromSync && window.syncManager && window.syncManager.isEnabled) {
-    window.syncManager.broadcastVolume(filename, numValue);
-  }
+  // Volume is not synced - each user manages their own volume locally
 }
 
 
