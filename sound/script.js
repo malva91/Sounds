@@ -293,11 +293,14 @@ function createPadElement(sound) {
     return createEffectButton(sound, filename, label, tint);
   }
 
+  const customColor = customColors[filename];
+  const finalColor = customColor || tint;
+
   const pad = document.createElement('button');
   pad.className = 'pad';
   pad.setAttribute('data-filename', filename);
   pad.setAttribute('data-type', 'music');
-  pad.style.color = tint;
+  pad.style.color = finalColor;
   pad.setAttribute('aria-pressed', 'false');
   pad.setAttribute('tabindex', '0');
   pad.addEventListener('click', () => toggleSound(filename));
