@@ -117,27 +117,21 @@ class SyncManager {
     modal.id = 'roomModal';
     modal.className = 'panel';
     modal.innerHTML = `
-      <h2>Impostazioni Stanza</h2>
+      <h2>Gestione Stanza</h2>
       <div class="room-info">
         <div class="row">
           <label for="roomNameInput">Nome Stanza:</label>
           <input type="text" id="roomNameInput" value="${this.roomName}"
-                 placeholder="Inserisci nome stanza" maxlength="50">
-          <button type="button" class="btn accent" onclick="syncManager.saveRoomName()">Salva Nome</button>
-        </div>
-
-        <div class="row" style="margin-top: 16px;">
-          <label>ID Stanza:</label>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <input type="text" id="roomIdInput" value="${this.roomId}" readonly
-                   style="flex: 1; font-family: monospace;">
-            <button type="button" class="btn" onclick="syncManager.copyRoomId()">📋</button>
+                 placeholder="Inserisci il nome della stanza" maxlength="50">
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button type="button" class="btn accent" style="flex: 1;" onclick="syncManager.createNewRoom()">Crea stanza</button>
+            <button type="button" class="btn accent" style="flex: 1;" onclick="syncManager.joinRoomByName()">Unisciti a stanza</button>
           </div>
-          <small class="help">Condividi questo ID per permettere ad altri di unirsi alla tua stanza</small>
+          <small class="help">Crea una nuova stanza o unisciti ad una esistente usando il nome</small>
         </div>
 
         <div class="row" style="margin-top: 16px;">
-          <label for="userRoleSelect">Il tuo Ruolo:</label>
+          <label for="userRoleSelect">Ruolo:</label>
           <select id="userRoleSelect" style="background:#1c1c20; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px 12px;">
             <option value="master" ${this.userRole === 'master' ? 'selected' : ''}>Master - può avviare musica</option>
             <option value="player" ${this.userRole === 'player' ? 'selected' : ''}>Giocatore - solo ascolto</option>
@@ -146,14 +140,13 @@ class SyncManager {
         </div>
 
         <div class="row" style="margin-top: 16px;">
-          <label for="joinRoomInput">Unisciti a una stanza:</label>
-          <input type="text" id="joinRoomInput" placeholder="Inserisci ID stanza"
-                 style="font-family: monospace;">
-          <button type="button" class="btn accent" onclick="syncManager.joinRoom()">Unisciti</button>
-        </div>
-
-        <div class="row" style="margin-top: 16px;">
-          <button type="button" class="btn" onclick="syncManager.createNewRoom()">Crea Nuova Stanza</button>
+          <label>ID Stanza corrente:</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="roomIdInput" value="${this.roomId}" readonly
+                   style="flex: 1; font-family: monospace; font-size: 0.85em;">
+            <button type="button" class="btn" onclick="syncManager.copyRoomId()">📋</button>
+          </div>
+          <small class="help">Condividi questo ID per permettere ad altri di unirsi</small>
         </div>
 
         <div class="room-stats" style="margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
@@ -201,6 +194,10 @@ class SyncManager {
       localStorage.setItem('sync-enabled', 'true');
 
       this.roomRef = this.db.ref('rooms/' + this.roomId);
+
+      if (this.roomName) {
+        await this.roomRef.child('name').set(this.roomName);
+      }
 
       await this.roomRef.child('users/' + this.userId).set({
         online: true,
@@ -513,19 +510,33 @@ class SyncManager {
         };
       }
 
-      if (this.isEnabled) {
-        const users = Object.keys(this.roomRef ? {} : {}).length;
-        document.getElementById('roomUsers').textContent = users.toString();
-        document.getElementById('roomStatus').textContent = 'Connesso';
-        const roleText = this.userRole === 'master' ? 'Master' : 'Giocatore';
-        document.getElementById('roomRole').textContent = roleText;
-      } else {
-        document.getElementById('roomUsers').textContent = '0';
-        document.getElementById('roomStatus').textContent = 'Disconnesso';
-        document.getElementById('roomRole').textContent = '-';
-      }
+      this.updateRoomStats();
 
       modal.showModal();
+    }
+  }
+
+  updateRoomStats() {
+    if (this.isEnabled) {
+      const users = Object.keys(this.roomRef ? {} : {}).length;
+      const roomUsersEl = document.getElementById('roomUsers');
+      const roomStatusEl = document.getElementById('roomStatus');
+      const roomRoleEl = document.getElementById('roomRole');
+
+      if (roomUsersEl) roomUsersEl.textContent = users.toString();
+      if (roomStatusEl) roomStatusEl.textContent = 'Connesso';
+      if (roomRoleEl) {
+        const roleText = this.userRole === 'master' ? 'Master' : 'Giocatore';
+        roomRoleEl.textContent = roleText;
+      }
+    } else {
+      const roomUsersEl = document.getElementById('roomUsers');
+      const roomStatusEl = document.getElementById('roomStatus');
+      const roomRoleEl = document.getElementById('roomRole');
+
+      if (roomUsersEl) roomUsersEl.textContent = '0';
+      if (roomStatusEl) roomStatusEl.textContent = 'Disconnesso';
+      if (roomRoleEl) roomRoleEl.textContent = '-';
     }
   }
 
@@ -541,24 +552,40 @@ class SyncManager {
     }
   }
 
-  async joinRoom() {
-    const input = document.getElementById('joinRoomInput');
+  async joinRoomByName() {
+    const input = document.getElementById('roomNameInput');
     if (!input || !input.value.trim()) {
       if (window.showNotification) {
-        window.showNotification('Inserisci un ID stanza valido', 'error');
+        window.showNotification('Inserisci un nome stanza valido', 'error');
       }
       return;
     }
 
-    const newRoomId = input.value.trim();
+    const searchName = input.value.trim();
 
     try {
-      const roomRef = this.db.ref('rooms/' + newRoomId);
-      const snapshot = await roomRef.once('value');
+      const roomsRef = this.db.ref('rooms');
+      const snapshot = await roomsRef.once('value');
+      const rooms = snapshot.val();
 
-      if (!snapshot.exists()) {
+      if (!rooms) {
         if (window.showNotification) {
-          window.showNotification('Stanza non trovata. Verifica l\'ID inserito.', 'error');
+          window.showNotification('Nessuna stanza trovata con questo nome', 'error');
+        }
+        return;
+      }
+
+      let foundRoomId = null;
+      for (const [roomId, roomData] of Object.entries(rooms)) {
+        if (roomData.name && roomData.name.toLowerCase() === searchName.toLowerCase()) {
+          foundRoomId = roomId;
+          break;
+        }
+      }
+
+      if (!foundRoomId) {
+        if (window.showNotification) {
+          window.showNotification('Stanza non trovata. Verifica il nome inserito.', 'error');
         }
         return;
       }
@@ -569,11 +596,9 @@ class SyncManager {
         await this.disable();
       }
 
-      this.roomId = newRoomId;
+      this.roomId = foundRoomId;
+      this.roomName = searchName;
       localStorage.setItem('sync-room-id', this.roomId);
-
-      const roomData = snapshot.val();
-      this.roomName = roomData.name || '';
       localStorage.setItem('sync-room-name', this.roomName);
 
       document.getElementById('roomIdInput').value = this.roomId;
@@ -586,13 +611,11 @@ class SyncManager {
       }
 
       if (window.showNotification) {
-        const displayName = this.roomName || this.roomId;
-        window.showNotification('Unito alla stanza: ' + displayName, 'success');
+        window.showNotification('Unito alla stanza: ' + this.roomName, 'success');
       }
 
-      input.value = '';
     } catch (error) {
-      console.error('[Sync] Join room error:', error);
+      console.error('[Sync] Join room by name error:', error);
       if (window.showNotification) {
         window.showNotification('Errore durante l\'accesso alla stanza', 'error');
       }
@@ -600,51 +623,63 @@ class SyncManager {
   }
 
   async createNewRoom() {
-    const wasEnabled = this.isEnabled;
-
-    if (wasEnabled) {
-      await this.disable();
-    }
-
-    this.roomId = this.generateRoomId();
-    this.roomName = '';
-    localStorage.setItem('sync-room-id', this.roomId);
-    localStorage.setItem('sync-room-name', '');
-
-    document.getElementById('roomIdInput').value = this.roomId;
-    document.getElementById('roomNameInput').value = '';
-
-    this.updateRoomNameDisplay();
-
-    if (wasEnabled) {
-      await this.enable();
-    }
-
-    if (window.showNotification) {
-      window.showNotification('Nuova stanza creata: ' + this.roomId, 'success');
-    }
-  }
-
-  async saveRoomName() {
     const input = document.getElementById('roomNameInput');
-    if (input) {
-      this.roomName = input.value.trim();
-      localStorage.setItem('sync-room-name', this.roomName);
-      this.updateRoomNameDisplay();
+    const newRoomName = input ? input.value.trim() : '';
 
-      if (this.roomRef && this.isEnabled) {
-        try {
-          await this.roomRef.child('name').set(this.roomName);
-        } catch (error) {
-          console.error('[Sync] Save room name error:', error);
+    if (!newRoomName) {
+      if (window.showNotification) {
+        window.showNotification('Inserisci un nome per la stanza', 'error');
+      }
+      return;
+    }
+
+    try {
+      const roomsRef = this.db.ref('rooms');
+      const snapshot = await roomsRef.once('value');
+      const rooms = snapshot.val();
+
+      if (rooms) {
+        for (const [roomId, roomData] of Object.entries(rooms)) {
+          if (roomData.name && roomData.name.toLowerCase() === newRoomName.toLowerCase()) {
+            if (window.showNotification) {
+              window.showNotification('Esiste già una stanza con questo nome', 'error');
+            }
+            return;
+          }
         }
       }
 
+      const wasEnabled = this.isEnabled;
+
+      if (wasEnabled) {
+        await this.disable();
+      }
+
+      this.roomId = this.generateRoomId();
+      this.roomName = newRoomName;
+      localStorage.setItem('sync-room-id', this.roomId);
+      localStorage.setItem('sync-room-name', this.roomName);
+
+      document.getElementById('roomIdInput').value = this.roomId;
+
+      this.updateRoomNameDisplay();
+
+      if (wasEnabled) {
+        await this.enable();
+      }
+
       if (window.showNotification) {
-        window.showNotification('Nome stanza salvato', 'success');
+        window.showNotification('Nuova stanza creata: ' + this.roomName, 'success');
+      }
+
+    } catch (error) {
+      console.error('[Sync] Create room error:', error);
+      if (window.showNotification) {
+        window.showNotification('Errore durante la creazione della stanza', 'error');
       }
     }
   }
+
 
   updateRoomNameDisplay() {
     const display = document.getElementById('roomNameDisplay');
