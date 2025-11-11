@@ -116,6 +116,8 @@ try{
     reply(['success'=>false,'error'=>'MIME_FAIL_'.$mime], 415);
   }
 
+  $destDir = __DIR__ . '/sounds';
+
   // Generate filename from original filename
   $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
   $safeName = slugify($originalName) . '.' . $ext;
@@ -126,7 +128,6 @@ try{
     $safeName = slugify($originalName) . '-' . $counter . '.' . $ext;
     $counter++;
   }
-  $destDir = __DIR__ . '/sounds';
   
   if (!is_dir($destDir)) {
     if (!@mkdir($destDir, 0775, true)){
