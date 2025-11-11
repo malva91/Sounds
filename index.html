@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cani Di Odino — Soundboard v1.4.9</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+</head>
+<body>
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <img src="assets/logo.png" alt="Cani Di Odino Logo" class="logo" onerror="this.style.display='none'">
+      <h1 class="brand">Cani Di <span>Odino</span> <small class="version">v1.4.9</small></h1>
+    </div>
+    <div class="toolbar-actions">
+      <div class="search-wrap">
+        <input type="text" id="search" placeholder="Cerca suoni o #tag..." autocomplete="off">
+      </div>
+      <div class="status-indicator online">ONLINE</div>
+      <button class="btn" id="offlineToggle" onclick="toggleOfflineMode()">📱 Offline</button>
+      <button class="btn" onclick="openUploadModal()">+ Upload</button>
+      <button class="btn" onclick="stopAllSounds()" title="Ferma tutti i suoni">⏹️</button>
+      <button class="btn" onclick="openOfflineSettings()" title="Impostazioni offline">⚙️</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="errorBar" class="error-bar" hidden></div>
+
+    <!-- Tab Navigation -->
+    <nav class="tab-navigation">
+      <button class="tab-btn active" data-tab="effects" onclick="switchTab('effects')">
+        <span class="tab-icon">⚡</span>
+        <span class="tab-label">Effetti</span>
+      </button>
+      <button class="tab-btn" data-tab="music" onclick="switchTab('music')">
+        <span class="tab-icon">🎵</span>
+        <span class="tab-label">Musiche</span>
+      </button>
+    </nav>
+
+    <!-- Effects Section -->
+    <section id="effectsSection" class="content-section active">
+      <div class="section-header">
+        <h2 class="section-title">Effetti Sonori</h2>
+        <div class="section-actions">
+          <div class="search-wrap">
+            <input type="text" id="searchEffects" class="search-input" placeholder="Cerca effetti..." autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="filters-section" id="effectsFiltersSection" style="display: none;" role="region" aria-label="Filtri effetti">
+        <div class="filters" id="effectsFiltersContainer"></div>
+      </div>
+
+      <div class="grid-wrap">
+        <div class="grid effects-grid" id="effectsGrid" data-size="medium"></div>
+      </div>
+    </section>
+
+    <!-- Music Section -->
+    <section id="musicSection" class="content-section">
+      <div class="section-header">
+        <h2 class="section-title">Musiche</h2>
+        <div class="section-actions">
+          <div class="search-wrap">
+            <input type="text" id="searchMusic" class="search-input" placeholder="Cerca musiche..." autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="filters-section" id="musicFiltersSection" style="display: none;" role="region" aria-label="Filtri musiche">
+        <div class="filters" id="musicFiltersContainer"></div>
+      </div>
+
+      <div class="grid-wrap">
+        <div class="grid music-grid" id="musicGrid" data-size="medium"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Upload Modal -->
+  <dialog id="uploadModal" class="panel" aria-labelledby="upload-title">
+    <h2 id="upload-title">Carica nuovo suono</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <div class="row">
+        <label for="upload-label">Etichetta *</label>
+        <input type="text" id="upload-label" name="label" required maxlength="80" placeholder="Nome del suono">
+      </div>
+      <div class="row">
+        <label for="upload-type">Tipologia *</label>
+        <select id="upload-type" name="type" required style="background:#1c1c20; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px 12px;">
+          <option value="music">Musica - pad completo con controlli</option>
+          <option value="effect">Effetto - pulsante colorato semplice</option>
+        </select>
+        <small class="help">Gli effetti sono pulsanti semplici per suoni brevi</small>
+      </div>
+      <div class="row">
+        <label for="upload-tags">Tag (separati da virgola)</label>
+        <input type="text" id="upload-tags" name="tags" placeholder="musica, effetti, ambiente">
+        <small class="help">Max 20 tag, 30 caratteri ciascuno</small>
+      </div>
+      <div class="row">
+        <label for="upload-file">File audio *</label>
+        <input type="file" id="upload-file" name="file" accept=".mp3,.wav,.ogg" required>
+        <small class="help">MP3, WAV, OGG - Max 200MB</small>
+      </div>
+      <menu>
+        <button type="button" class="btn" onclick="closeModal(uploadModal)">Annulla</button>
+        <button type="submit" class="btn accent">Carica</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Edit Modal -->
+  <dialog id="editModal" class="panel" aria-labelledby="edit-title">
+    <h2 id="edit-title">Modifica suono</h2>
+    <form id="editForm">
+      <input type="hidden" name="filename">
+      <div class="row">
+        <label for="edit-label">Etichetta *</label>
+        <input type="text" id="edit-label" name="label" required maxlength="80">
+      </div>
+      <div class="row">
+        <label for="edit-type">Tipologia *</label>
+        <select id="edit-type" name="type" required style="background:#1c1c20; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px 12px;">
+          <option value="music">Musica - pad completo con controlli</option>
+          <option value="effect">Effetto - pulsante colorato semplice</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="edit-tags">Tag (separati da virgola)</label>
+        <input type="text" id="edit-tags" name="tags" placeholder="musica, effetti, ambiente">
+        <small class="help">Max 20 tag, 30 caratteri ciascuno</small>
+      </div>
+      <div class="row">
+        <label for="edit-color">Colore pulsante</label>
+        <div class="color-picker-wrap">
+          <input type="color" id="edit-color" name="color" class="color-input">
+          <input type="text" id="edit-color-hex" class="color-hex" placeholder="#ffffff" maxlength="7">
+        </div>
+        <small class="help">Colore personalizzato per il pulsante</small>
+      </div>
+      <menu>
+        <button type="button" class="btn" onclick="closeModal(editModal)">Annulla</button>
+        <button type="submit" class="btn accent">Salva</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Confirm Delete Modal -->
+  <dialog id="confirmModal" class="panel" aria-labelledby="confirm-title">
+    <h2 id="confirm-title">Conferma eliminazione</h2>
+    <p class="confirm-message"></p>
+    <menu>
+      <button type="button" class="btn" onclick="closeModal(confirmModal)">Annulla</button>
+      <button type="button" class="btn danger confirm-btn">Elimina</button>
+    </menu>
+  </dialog>
+
+  <!-- Offline Settings Modal -->
+  <dialog id="offlineModal" class="panel" aria-labelledby="offline-title">
+    <h2 id="offline-title">Impostazioni Offline v1.4.9</h2>
+    <div class="offline-info">
+      <p>La modalità offline ti permette di utilizzare la soundboard senza connessione internet.</p>
+      <div class="version-info">
+        <div class="version-grid">
+          <div class="version-item">
+            <span class="version-label">Soundboard:</span>
+            <span class="version-value">v1.4.9</span>
+          </div>
+          <div class="version-item">
+            <span class="version-label">Offline Manager:</span>
+            <span class="version-value" id="offlineVersion">v1.4.9</span>
+          </div>
+          <div class="version-item">
+            <span class="version-label">Service Worker:</span>
+            <span class="version-value" id="swVersion">v1.4.9</span>
+          </div>
+        </div>
+      </div>
+      <div class="offline-stats">
+        <div class="stat">
+          <span class="stat-label">Suoni disponibili:</span>
+          <span class="stat-value" id="offlineSoundsCount">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Spazio utilizzato:</span>
+          <span class="stat-value" id="offlineStorageSize">0 MB</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Stato Service Worker:</span>
+          <span class="stat-value" id="swStatus">Checking...</span>
+        </div>
+      </div>
+    </div>
+    <menu>
+      <button type="button" class="btn danger" onclick="clearOfflineData()">Cancella Dati</button>
+      <button type="button" class="btn" onclick="closeModal(offlineModal)">Chiudi</button>
+    </menu>
+  </dialog>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="script.js"></script>
+  <script src="tabs.js"></script>
+  <script src="offline-manager.js"></script>
+  <script src="sync.js"></script>
+</body>
+</html>
